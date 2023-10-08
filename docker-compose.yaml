@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+
+  fastapi_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rabbitmq
+
+  minio:
+    image: minio/minio
+    volumes:
+      - minio-data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: adminadmin
+    command: server --console-address :9001 /data
+
+  arangodb:
+    image: arangodb/arangodb:latest
+    ports:
+      - "8529:8529"
+    environment:
+      ARANGO_ROOT_PASSWORD: rootpassword  # You should change this to something secure!
+      ARANGO_NO_AUTH: "1"                # 0 means authentication is enabled, set to 1 to disable it (not recommended for production)
+    volumes:
+      - arangodb-data:/var/lib/arangodb3
+      - arangodb-apps:/var/lib/arangodb3-apps
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    ports:
+      - "15672:15672"  # Web management interface
+      - "5672:5672"    # Default RabbitMQ service port
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+
+volumes:
+  minio-data:
+  arangodb-data:
+  arangodb-apps:
+  rabbitmq-data:
