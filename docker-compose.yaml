@@ -6,16 +6,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "8001:8001"
+#    ports:
+#      - "8001:8001"
     environment:
-      - RABBIT_HOST=rabbitmq
-      - ARANGO_HOST=http://arangodb:8529
-      - ARANGO_PORT=8529
+        - RABBIT_HOST=0.0.0.0
+        - ARANGO_HOST=http://0.0.0.0:8529
+        - ARANGO_PORT=8529
+        - MINIO_HOST=0.0.0.0
     depends_on:
       - rabbitmq
-    networks:
-      - vpn_network
+    network_mode: service:gluetun
+
 
   simple_playwright_service:
       build:
@@ -24,72 +25,85 @@ services:
       depends_on:
         - rabbitmq
         - gluetun
-      networks:
-        - vpn_network
+      network_mode: service:gluetun
       environment:
-        - RABBIT_HOST=rabbitmq
-        - ARANGO_HOST=http://arangodb:8529
+        - RABBIT_HOST=0.0.0.0
+        - ARANGO_HOST=http://0.0.0.0:8529
         - ARANGO_PORT=8529
-        - MINIO_HOST=minio
+        - MINIO_HOST=0.0.0.0
       command: ["pipenv", "run", "python3", "-u", "src/service/simple_playwright.py"]
+#      command: ["/bin/bash"]
+#      links:
+#        - rabbitmq
+#        - arangodb
+#        - minio
 
   gluetun:
+    container_name: vpn
     image: qmcgaw/gluetun
     cap_add:
       - NET_ADMIN
     environment:
-      - VPNSP=somevpnprovider
-      - OPENVPN_USER=someuser
-      - OPENVPN_PASSWORD=somepass
+      - VPNSP=yourprovider
+      - OPENVPN_USER=yourUser
+      - OPENVPN_PASSWORD=yourPass
       # add other environment variables as needed, refer to Gluetun's documentation for full details
     volumes:
       - ./gluetun:/gluetun
     ports:
-      - 8000:8000 # for the built-in HTTP control server
-      # Expose other ports if needed
+      - "8000:8000" # for the built-in HTTP control server
+      - "8001:8001" # fast API
+      - "15672:15672"  # Web management interface
+      - "5672:5672"    # Default RabbitMQ service port
+      - "9000:9000" # minio
+      - "9001:9001" # minio
+      - "8529:8529" # arangodb
+
     restart: always
-    networks:
-      - vpn_network
+
+
 
   minio:
     image: minio/minio
     volumes:
       - minio-data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+#    ports:
+#      - "9000:9000"
+#      - "9001:9001"
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: adminadmin
     command: server --console-address :9001 /data
-    networks:
-      - vpn_network
+    network_mode: service:gluetun
+
 
   arangodb:
     image: arangodb/arangodb:latest
-    ports:
-      - "8529:8529"
+#    ports:
+#      - "8529:8529"
     environment:
       ARANGO_ROOT_PASSWORD: rootpassword  # You should change this to something secure!
       ARANGO_NO_AUTH: "1"                # 0 means authentication is enabled, set to 1 to disable it (not recommended for production)
     volumes:
       - arangodb-data:/var/lib/arangodb3
       - arangodb-apps:/var/lib/arangodb3-apps
-    networks:
-      - vpn_network
+    network_mode: service:gluetun
+
 
   rabbitmq:
     image: "rabbitmq:management"
-    ports:
-      - "15672:15672"  # Web management interface
-      - "5672:5672"    # Default RabbitMQ service port
+#    ports:
+#      - "15672:15672"  # Web management interface
+#      - "5672:5672"    # Default RabbitMQ service port
     environment:
       RABBITMQ_DEFAULT_USER: user
       RABBITMQ_DEFAULT_PASS: password
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
-    networks:
-      - vpn_network
+    network_mode: service:gluetun
+
+#    networks:
+#      - vpn_network
 
 volumes:
   minio-data:
