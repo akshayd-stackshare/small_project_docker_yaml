@@ -1,8 +1,5 @@
 import pprint
-import re
-from hashlib import md5
 from pathlib import Path
-from urllib.parse import urlsplit
 
 import settings
 

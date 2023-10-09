@@ -1,10 +1,12 @@
 from pyArango.connection import Connection
 
+import settings
+
 
 def get_db(conn=None):
     if not conn:
         # Connect to ArangoDB server if no connection is provided
-        conn = Connection(username="root", password="rootpassword")  # replace with your credentials
+        conn = Connection(username="root", password="rootpassword", arangoURL=settings.ARANGO_HOST)  # replace with your credentials
 
     # Create a new database if it doesn't exist
     if not conn.hasDatabase("url_fetcher_service"):

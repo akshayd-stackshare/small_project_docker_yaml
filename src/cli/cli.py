@@ -6,6 +6,7 @@ import requests
 
 # todo: change this to communicate with an API
 from data_infrastructure.rabbitmq.service import RabbitMQService
+from settings import API_HOST
 from system.models.input import ScrapeRequest
 
 
@@ -39,7 +40,7 @@ def send_scrape_request(url):
     """
     Sends a scraping request to the FastAPI endpoint.
     """
-    api_endpoint = 'http://localhost:8000/scrape'
+    api_endpoint = f'http://{API_HOST}:8001/scrape'
 
     data = {
         'url': url,
@@ -53,6 +54,7 @@ def send_scrape_request(url):
         click.echo(result.get('message', 'Scrape job successfully sent!'))
     else:
         click.echo(f"Failed to send scrape job. Server responded with: {response.status_code} - {response.text}")
+
 
 if __name__ == '__main__':
     cli()

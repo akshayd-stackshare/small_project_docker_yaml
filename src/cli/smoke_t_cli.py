@@ -5,7 +5,7 @@
 import pprint
 import os
 
-from cli.utils import create_scrape_job, create_scrape_request
+from utils import create_scrape_request, create_scrape_job
 from settings import SRC_DIR
 
 news_urls = {

@@ -7,9 +7,49 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8001"
+    environment:
+      - RABBIT_HOST=rabbitmq
+      - ARANGO_HOST=http://arangodb:8529
+      - ARANGO_PORT=8529
     depends_on:
       - rabbitmq
+    networks:
+      - vpn_network
+
+  simple_playwright_service:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      depends_on:
+        - rabbitmq
+        - gluetun
+      networks:
+        - vpn_network
+      environment:
+        - RABBIT_HOST=rabbitmq
+        - ARANGO_HOST=http://arangodb:8529
+        - ARANGO_PORT=8529
+        - MINIO_HOST=minio
+      command: ["pipenv", "run", "python3", "-u", "src/service/simple_playwright.py"]
+
+  gluetun:
+    image: qmcgaw/gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPNSP=somevpnprovider
+      - OPENVPN_USER=someuser
+      - OPENVPN_PASSWORD=somepass
+      # add other environment variables as needed, refer to Gluetun's documentation for full details
+    volumes:
+      - ./gluetun:/gluetun
+    ports:
+      - 8000:8000 # for the built-in HTTP control server
+      # Expose other ports if needed
+    restart: always
+    networks:
+      - vpn_network
 
   minio:
     image: minio/minio
@@ -22,6 +62,8 @@ services:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: adminadmin
     command: server --console-address :9001 /data
+    networks:
+      - vpn_network
 
   arangodb:
     image: arangodb/arangodb:latest
@@ -33,6 +75,8 @@ services:
     volumes:
       - arangodb-data:/var/lib/arangodb3
       - arangodb-apps:/var/lib/arangodb3-apps
+    networks:
+      - vpn_network
 
   rabbitmq:
     image: "rabbitmq:management"
@@ -44,9 +88,16 @@ services:
       RABBITMQ_DEFAULT_PASS: password
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - vpn_network
 
 volumes:
   minio-data:
   arangodb-data:
   arangodb-apps:
   rabbitmq-data:
+  gluetun:
+
+networks:
+  vpn_network:
+    driver: bridge

@@ -1,12 +1,15 @@
+import pprint
 import time
 
 import pika
 from pika.exceptions import StreamLostError
 
+from settings import RABBIT_HOST
+
 
 class RabbitMQService:
 
-    def __init__(self, host='localhost', user='user', password='password'):
+    def __init__(self, host=RABBIT_HOST, user='user', password='password'):
         self.host = host
         self.user = user
         self.password = password
@@ -20,6 +23,8 @@ class RabbitMQService:
 
         credentials = pika.PlainCredentials(self.user, self.password)
         parameters = pika.ConnectionParameters(host=self.host, credentials=credentials)
+        pprint.pprint(credentials)
+        pprint.pprint(parameters)
         self.connection = pika.BlockingConnection(parameters)
         self.channel = self.connection.channel()
 
