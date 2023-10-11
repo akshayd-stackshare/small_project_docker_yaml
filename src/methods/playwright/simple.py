@@ -1,7 +1,9 @@
 import io
 import pprint
 import traceback
+import uuid
 from datetime import datetime
+from uuid import UUID
 
 from playwright.sync_api import sync_playwright
 
@@ -20,7 +22,7 @@ from src.system.models.errors import ScrapeError
 from src.system.models.urls import URLMetadata
 
 
-def download_url(url: str) -> URLMetadata:
+def download_url(url: str, correlation_id: UUID) -> URLMetadata:
     with sync_playwright() as p:
         browser = p.chromium.launch()
 
@@ -80,6 +82,7 @@ def download_url(url: str) -> URLMetadata:
         print(har_object_path)
         print(html_object_path)
         _url_metadata = URLMetadata(
+            correlation_id=correlation_id,
             url=url,
             utc_time=datetime.utcnow(),
             screenshot_path=screenshot_object_path,
@@ -180,8 +183,10 @@ if __name__ == '__main__':
         print(f"{key}:\n{'-' * 20}")
         for _url in urls:
             count += 1
+            _correlation_id = uuid.uuid4()
+
             try:
-                url_metadata = download_url(url=_url)
+                url_metadata = download_url(url=_url, correlation_id=_correlation_id)
                 pprint.pprint(url_metadata)
             except Exception as e:
                 traceback.print_exc()
@@ -190,7 +195,8 @@ if __name__ == '__main__':
                 error_class_str = e.__class__.__name__
 
                 # todo: small front end for these
-                se = ScrapeError(url=_url,
+                se = ScrapeError(correlation_id=_correlation_id,
+                                 url=_url,
                                  err_type=error_class_str,
                                  err_msg=tb_str,
                                  utc_time=datetime.utcnow())

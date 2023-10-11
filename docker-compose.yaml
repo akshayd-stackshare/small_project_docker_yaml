@@ -32,11 +32,9 @@ services:
         - ARANGO_PORT=8529
         - MINIO_HOST=0.0.0.0
       command: ["pipenv", "run", "python3", "-u", "src/service/simple_playwright.py"]
+      restart: always
 #      command: ["/bin/bash"]
-#      links:
-#        - rabbitmq
-#        - arangodb
-#        - minio
+
 
   gluetun:
     container_name: vpn
@@ -44,13 +42,13 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      - VPNSP=yourprovider
-      - OPENVPN_USER=yourUser
-      - OPENVPN_PASSWORD=yourPass
+      - VPNSP=yourvpn
+      - OPENVPN_USER=youruser
+      - OPENVPN_PASSWORD=yourpass
       # add other environment variables as needed, refer to Gluetun's documentation for full details
     volumes:
       - ./gluetun:/gluetun
-    ports:
+    ports: # add all ports from other apps to this container.
       - "8000:8000" # for the built-in HTTP control server
       - "8001:8001" # fast API
       - "15672:15672"  # Web management interface

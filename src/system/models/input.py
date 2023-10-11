@@ -1,9 +1,12 @@
-from pydantic import BaseModel, HttpUrl
+from uuid import uuid4, UUID
+
+from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
 
 
 class ScrapeRequest(BaseModel):
-    url: str
+    correlation_id: UUID = Field(default_factory=uuid4)
+    url: HttpUrl
     time_requested: datetime
 
 

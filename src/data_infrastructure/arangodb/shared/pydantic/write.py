@@ -15,6 +15,6 @@ def write_pydantic_to_arangodb(pydantic_obj: BaseModel, conn=None):
 
     # Get the collection and save the document
     collection = db[collection_name]
-    data = pydantic_obj.dict()
+    data = pydantic_obj.model_dump()
     document = collection.createDocument(data)
     document.save()

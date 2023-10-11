@@ -8,7 +8,8 @@ The purpose of this card is to create a service that will do 4 things:
 - [x] Store a screenshot of that webpage
 - [x] Store the raw HTML response
 - [x] Store the archive from the browser of all responses and calls
-- [ ] Deploy api onto docker via a docker-compose
+- [X] Deploy api onto docker via a docker-compose
+- [X] Ensure all traffic transits a VPN container
 ---
 
 ### **User Story:** 

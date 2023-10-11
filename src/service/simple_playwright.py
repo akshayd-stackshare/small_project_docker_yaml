@@ -3,7 +3,7 @@ import time
 import traceback
 from datetime import datetime
 
-from rate_limiting.leaky_bucket import LeakyBucket
+from rate_limiting.local.leaky_bucket import LeakyBucket
 from src.data_infrastructure.arangodb.shared.pydantic.write import write_pydantic_to_arangodb
 from src.data_infrastructure.rabbitmq.service import RabbitMQService
 from src.methods.playwright.simple import download_url
@@ -43,7 +43,8 @@ def process_message(ch, method, properties, body):
         tb_str = traceback.format_exc()
         error_class_str = e.__class__.__name__
 
-        se = ScrapeError(body=body,
+        se = ScrapeError(correlation_id=scrape_request.correlation_id,
+                         body=body,
                          url=scrape_request.url,
                          err_type=error_class_str,
                          err_msg=tb_str,
