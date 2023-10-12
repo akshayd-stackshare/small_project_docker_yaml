@@ -26,7 +26,7 @@ def process_message(ch, method, properties, body):
         print(scrape_request)
 
         write_pydantic_to_arangodb(scrape_request)
-        domain = get_domain_from_fqdn(scrape_request.url)
+        domain = get_domain_from_fqdn(str(scrape_request.url))
         LEAKY_BUCKET = RedisLeakyBucket(redis_host=settings.REDIS_HOST,
                                         capacity=4,
                                         leak_rate=1,
@@ -35,7 +35,7 @@ def process_message(ch, method, properties, body):
             pprint.pprint(f'waiting for capacity for domain:{domain} && {scrape_request.url}')
             time.sleep(0.1)
         else:
-            download_url(url=scrape_request.url)
+            download_url(url=scrape_request.url, correlation_id=scrape_request.correlation_id)
 
     except Exception as e:
         traceback.print_exc()
@@ -45,7 +45,7 @@ def process_message(ch, method, properties, body):
 
         se = ScrapeError(correlation_id=scrape_request.correlation_id,
                          body=body,
-                         url=scrape_request.url,
+                         url=str(scrape_request.url),
                          err_type=error_class_str,
                          err_msg=tb_str,
                          utc_time=datetime.utcnow())

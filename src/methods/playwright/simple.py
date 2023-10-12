@@ -6,6 +6,7 @@ from datetime import datetime
 from uuid import UUID
 
 from playwright.sync_api import sync_playwright
+from pydantic import HttpUrl
 
 from src.data_infrastructure.arangodb.shared.pydantic.write import write_pydantic_to_arangodb
 from src.metadata.database.object_storage.har.upload import har_upload_to_minio
@@ -22,7 +23,8 @@ from src.system.models.errors import ScrapeError
 from src.system.models.urls import URLMetadata
 
 
-def download_url(url: str, correlation_id: UUID) -> URLMetadata:
+def download_url(url: HttpUrl, correlation_id: UUID) -> URLMetadata:
+    url = str(url)
     with sync_playwright() as p:
         browser = p.chromium.launch()
 
