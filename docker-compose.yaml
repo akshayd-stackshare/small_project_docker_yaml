@@ -22,21 +22,25 @@ services:
       build:
         context: .
         dockerfile: Dockerfile
+      deploy:
+        replicas: 10
       depends_on:
-        - rabbitmq
-        - gluetun
+        rabbitmq:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        gluetun:
+          condition: service_healthy
+      restart: always
       network_mode: service:gluetun
       environment:
         - RABBIT_HOST=0.0.0.0
         - ARANGO_HOST=http://0.0.0.0:8529
         - ARANGO_PORT=8529
         - MINIO_HOST=0.0.0.0
+        - REDIS_HOST=0.0.0.0
       command: ["pipenv", "run", "python3", "-u", "src/service/simple_playwright.py"]
-#      command: ["/bin/bash"]
-#      links:
-#        - rabbitmq
-#        - arangodb
-#        - minio
+
 
   gluetun:
     container_name: vpn
@@ -44,9 +48,9 @@ services:
     cap_add:
       - NET_ADMIN
     environment:
-      - VPNSP=yourprovider
-      - OPENVPN_USER=yourUser
-      - OPENVPN_PASSWORD=yourPass
+      - VPNSP=yourvpnprovider
+      - OPENVPN_USER=yourvpnuser
+      - OPENVPN_PASSWORD=yourvpnpassword
       # add other environment variables as needed, refer to Gluetun's documentation for full details
     volumes:
       - ./gluetun:/gluetun
@@ -58,10 +62,20 @@ services:
       - "9000:9000" # minio
       - "9001:9001" # minio
       - "8529:8529" # arangodb
+      - "6379:6379" # redis
 
     restart: always
 
-
+  redis:
+      image: redis:latest
+      volumes:
+        - redis-data:/data
+      network_mode: service:gluetun
+      healthcheck:
+        test: [ "CMD", "redis-cli", "ping" ]
+        interval: 10s
+        timeout: 5s
+        retries: 3
 
   minio:
     image: minio/minio
@@ -88,6 +102,11 @@ services:
       - arangodb-data:/var/lib/arangodb3
       - arangodb-apps:/var/lib/arangodb3-apps
     network_mode: service:gluetun
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://arangodb:8529/_admin/echo" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 
   rabbitmq:
@@ -101,11 +120,17 @@ services:
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     network_mode: service:gluetun
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 15s
+      timeout: 10s
+      retries: 3
 
 #    networks:
 #      - vpn_network
 
 volumes:
+  redis-data:
   minio-data:
   arangodb-data:
   arangodb-apps:

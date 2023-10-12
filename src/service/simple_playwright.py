@@ -1,16 +1,18 @@
 import json
+import pprint
 import time
 import traceback
 from datetime import datetime
 
-from rate_limiting.leaky_bucket import LeakyBucket
+import settings
+from metadata.transform.shared.convert import get_domain_from_fqdn
+from rate_limiting.distributed.leaky_bucket import RedisLeakyBucket
 from src.data_infrastructure.arangodb.shared.pydantic.write import write_pydantic_to_arangodb
 from src.data_infrastructure.rabbitmq.service import RabbitMQService
 from src.methods.playwright.simple import download_url
 from src.system.models.errors import ScrapeError
 from src.system.models.input import ScrapeRequest
 
-LEAKY_BUCKET = LeakyBucket(10, 1)  # 10 requests capacity, and it leaks at 1 request per second
 scrape_request = None
 
 
@@ -23,16 +25,13 @@ def process_message(ch, method, properties, body):
         print(scrape_request)
 
         write_pydantic_to_arangodb(scrape_request)
-
-        # todo: implement other rate limiting strategies
-        # todo: modify ScrapeRequest data model to hold which strat to use
-        # todo: a global limiter using redis perhaps.
-        # todo: would require a service that manages a single RedisLeakyBucket instance
-        # todo: would just need to save/load outputs from current rate limiting strategies
-        # todo: would need to add an environment var to determine whether to use a
-        #  service level limiter or a global limiter
-        # todo: could get fancier and implement a limiter by website though.
+        domain = get_domain_from_fqdn(scrape_request.url)
+        LEAKY_BUCKET = RedisLeakyBucket(redis_host=settings.REDIS_HOST,
+                                        capacity=4,
+                                        leak_rate=1,
+                                        fqdn=domain)  # 10 requests capacity, and it leaks at 1 request per second
         while not LEAKY_BUCKET.can_consume():
+            pprint.pprint(f'waiting for capacity for domain:{domain} && {scrape_request.url}')
             time.sleep(0.1)
         else:
             download_url(url=scrape_request.url)
