@@ -25,6 +25,7 @@ RABBIT_HOST = os.environ.get('RABBIT_HOST', 'localhost')
 ARANGO_PORT = os.environ.get("ARANGO_PORT", 8529)
 ARANGO_HOST = os.environ.get("ARANGO_HOST", "http://localhost:{ARANGO_PORT}")
 MINIO_HOST = os.environ.get("MINIO_HOST", "localhost")
+REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
 
 
 if __name__ == '__main__':

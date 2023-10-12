@@ -2,6 +2,7 @@ import pprint
 from pathlib import Path
 
 import settings
+import tldextract
 
 from urllib.parse import urlsplit
 import re
@@ -50,6 +51,10 @@ def url_to_filename(_url, use_hash=False, suffix=None, write_dir=None):
     return s3_key
 
 
+def get_domain_from_fqdn(fqdn):
+    extracted = tldextract.extract(fqdn)
+    domain = ".".join([extracted.domain, extracted.suffix]).strip('.')
+    return domain
 # def url_to_filename(_url, use_hash=False, suffix=None, write_dir=None):
 #     # Split the URL into components
 #     parsed_url = urlsplit(_url)
